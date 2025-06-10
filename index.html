@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>명조 크리티컬 계산기</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      max-width: 750px;
+      margin: auto;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    label {
+      font-weight: bold;
+    }
+    .form-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .form-row {
+      margin-bottom: 15px;
+    }
+    .form-row label {
+      display: inline-block;
+      width: 240px;
+      vertical-align: top;
+    }
+    select, input[type='number'] {
+      padding: 6px;
+      width: 150px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #0078D7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #e8f5e9;
+      border-left: 5px solid #2e7d32;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .result .success {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>명조 크리티컬 계산기</h1>
+
+  <div class="form-section">
+    <div class="form-row">
+      <label>스킬노드 선택:</label>
+      <select id="skillNode">
+        <option value="critRate">크리티컬 확률 +8%</option>
+        <option value="critDmg">크리티컬 피해 +8%</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>에코세트 보정 (크리티컬 확률):</label>
+      <input type="number" id="setCritRate" value="0">
+    </div>
+
+    <div class="form-row">
+      <label>에코세트 보정 (크리티컬 피해):</label>
+      <input type="number" id="setCritDmg" value="0">
+    </div>
+
+    <div class="form-row">
+      <label>무기 보정 (크리티컬 확률):</label>
+      <input type="number" id="weaponCritRate" value="0">
+    </div>
+
+    <div class="form-row">
+      <label>무기 보정 (크리티컬 피해):</label>
+      <input type="number" id="weaponCritDmg" value="0">
+    </div>
+
+    <div class="form-row">
+      <label>4코스트 에코 수:</label>
+      <select id="num4Cost">
+        <option value="0">0개</option>
+        <option value="1">1개</option>
+        <option value="2">2개</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>4코스트 에코 1 보정:</label>
+      <select id="echo4Cost1">
+        <option value="none">없음</option>
+        <option value="critRate">크리티컬 확률 +22%</option>
+        <option value="critDmg">크리티컬 피해 +44%</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>4코스트 에코 2 보정:</label>
+      <select id="echo4Cost2">
+        <option value="none">없음</option>
+        <option value="critRate">크리티컬 확률 +22%</option>
+        <option value="critDmg">크리티컬 피해 +44%</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>목표 크리티컬 확률 (%):</label>
+      <input type="number" id="targetCritRate" value="60">
+    </div>
+
+    <div class="form-row">
+      <label>목표 크리티컬 피해 (%):</label>
+      <input type="number" id="targetCritDmg" value="220">
+    </div>
+
+    <div class="form-row">
+      <label>크확 줄 수 설정 (0~5줄):</label>
+      <select id="linesCritRate">
+        <option value="0">0줄</option>
+        <option value="1">1줄</option>
+        <option value="2">2줄</option>
+        <option value="3">3줄</option>
+        <option value="4">4줄</option>
+        <option value="5">5줄</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>크피 줄 수 설정 (0~5줄):</label>
+      <select id="linesCritDmg">
+        <option value="0">0줄</option>
+        <option value="1">1줄</option>
+        <option value="2">2줄</option>
+        <option value="3">3줄</option>
+        <option value="4">4줄</option>
+        <option value="5">5줄</option>
+      </select>
+    </div>
+
+    <button onclick="calculate()">계산하기</button>
+  </div>
+
+  <div class="result" id="result"></div>
+
+   <script>
+    function calculate() {
+      const baseCritRate = 5;
+      const baseCritDmg = 150;
+      const minSubRate = 6.3;
+      const minSubDmg = 12.6;
+      const maxSubRate = 10.5;
+      const maxSubDmg = 21;
+
+      let critRate = baseCritRate;
+      let critDmg = baseCritDmg;
+
+      const skillNode = document.getElementById('skillNode').value;
+      if (skillNode === 'critRate') critRate += 8;
+      else critDmg += 8;
+
+      critRate += parseFloat(document.getElementById('setCritRate').value || 0);
+      critRate += parseFloat(document.getElementById('weaponCritRate').value || 0);
+      critDmg += parseFloat(document.getElementById('setCritDmg').value || 0);
+      critDmg += parseFloat(document.getElementById('weaponCritDmg').value || 0);
+
+      const num4 = parseInt(document.getElementById('num4Cost').value);
+      let echo1 = document.getElementById('echo4Cost1').value;
+      let echo2 = document.getElementById('echo4Cost2').value;
+
+      if (num4 === 0) { echo1 = 'none'; echo2 = 'none'; }
+      else if (num4 === 1) { echo2 = 'none'; }
+
+      if (echo1 === 'critRate') critRate += 22;
+      else if (echo1 === 'critDmg') critDmg += 44;
+      if (echo2 === 'critRate') critRate += 22;
+      else if (echo2 === 'critDmg') critDmg += 44;
+
+      const targetCritRate = parseFloat(document.getElementById('targetCritRate').value);
+      const targetCritDmg = parseFloat(document.getElementById('targetCritDmg').value);
+
+      const linesRate = parseInt(document.getElementById('linesCritRate').value);
+      const linesDmg = parseInt(document.getElementById('linesCritDmg').value);
+
+      const neededRate = Math.max(0, targetCritRate - critRate);
+      const neededDmg = Math.max(0, targetCritDmg - critDmg);
+
+      const perLineRate = neededRate / Math.max(1, linesRate);
+      const perLineDmg = neededDmg / Math.max(1, linesDmg);
+
+      const minTotalRate = critRate + linesRate * minSubRate;
+      const minTotalDmg = critDmg + linesDmg * minSubDmg;
+
+      const maxTotalRate = critRate + linesRate * maxSubRate;
+      const maxTotalDmg = critDmg + linesDmg * maxSubDmg;
+
+      let result = '';
+
+      if (maxTotalRate < targetCritRate || maxTotalDmg < targetCritDmg) {
+        let msg = `❌ <b>목표 수치 도달 불가능</b><br><br>`;
+        if (maxTotalRate < targetCritRate) {
+          const needLines = Math.ceil(neededRate / maxSubRate);
+          msg += `크리티컬 확률: 최대 ${maxTotalRate.toFixed(1)}%, 최소 ${needLines}줄 필요 (현재 ${linesRate}줄)<br>`;
+        }
+        if (maxTotalDmg < targetCritDmg) {
+          const needLines = Math.ceil(neededDmg / maxSubDmg);
+          msg += `크리티컬 피해: 최대 ${maxTotalDmg.toFixed(1)}%, 최소 ${needLines}줄 필요 (현재 ${linesDmg}줄)`;
+        }
+        result = msg;
+      } else if (minTotalRate >= targetCritRate && minTotalDmg >= targetCritDmg) {
+        const finalRate = critRate + linesRate * minSubRate;
+        const finalDmg = critDmg + linesDmg * minSubDmg;
+        result = `<span class='success'>✅ <b>확정적으로 달성 가능합니다!</b></span><br><br>` +
+                 `모든 줄에 최소치만 붙어도 달성됩니다.<br>` +
+                 `최종 크리티컬 확률: ${finalRate.toFixed(1)}%<br>` +
+                 `최종 크리티컬 피해: ${finalDmg.toFixed(1)}%`;
+      } else {
+        let msg = `✅ <b>달성 가능합니다!</b><br><br>`;
+        if (perLineRate <= maxSubRate) {
+          msg += `크리티컬 확률: ${neededRate.toFixed(1)}% → 줄당 ${perLineRate.toFixed(2)}%`;
+          if (perLineRate < minSubRate) {
+            const final = critRate + linesRate * minSubRate;
+            msg += ` (최소치로 계산 시 ${final.toFixed(1)}% 달성)`;
+          }
+          msg += `<br>`;
+        } else {
+          const require = Math.ceil(neededRate / maxSubRate);
+          msg += `⚠️ 크리티컬 확률: 최소 ${require}줄 필요 (현재 ${linesRate}줄)<br>`;
+        }
+        if (perLineDmg <= maxSubDmg) {
+          msg += `크리티컬 피해: ${neededDmg.toFixed(1)}% → 줄당 ${perLineDmg.toFixed(2)}%`;
+          if (perLineDmg < minSubDmg) {
+            const final = critDmg + linesDmg * minSubDmg;
+            msg += ` (최소치로 계산 시 ${final.toFixed(1)}% 달성)`;
+          }
+        } else {
+          const require = Math.ceil(neededDmg / maxSubDmg);
+          msg += `⚠️ 크리티컬 피해: 최소 ${require}줄 필요 (현재 ${linesDmg}줄)`;
+        }
+        result = msg;
+      }
+
+      document.getElementById('result').innerHTML = result;
+    }
+  </script>
+</body>
+</html>
